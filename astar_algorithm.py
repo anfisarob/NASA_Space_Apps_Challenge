@@ -38,7 +38,7 @@ dz = np.sqrt(dx**2 + dy**2)
 slope = np.degrees(np.arctan(np.hypot(dx / (s * cos_lat), dy / s)))
 weights = np.where(slope < 30, 1 + dz, infinity)
 
-thermal_k = 0.1
+thermal_k = 0.01
 weights = np.array(weights,dtype=np.float32) + np.array(thermal_k*thermal_inertia,dtype=np.float32)
 safety_zones = [[49.02, -171.85],[-42.4,70.5]]
 
