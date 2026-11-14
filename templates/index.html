@@ -17,7 +17,7 @@
                         {lat: 18.447, lng: 77.402, text: 'Perseverance', category: 'object'},
                         {lat: 18.65, lng: -133.8, text: 'Olympus', category: 'object'},
                         {lat: -5.4, lng: 137.8, text: 'Gale Crater', category: 'object'},
-                        {lat: 49.02, lng: -177.85, text: 'Arcadia', category: 'safe'},
+                        {lat: 49.02, lng: -171.85, text: 'Arcadia', category: 'safe'},
                         {lat: -42.4, lng: 70.5, text: 'Ellada', category: 'safe'}
         ];
       const globe = new Globe(document.getElementById('globe'))
@@ -42,24 +42,41 @@
         .then(data => animate_movement(data));
         });
         safe = true;
+        
+        function haversine(a, b) {
+            const R = 3396000;
+            const rad = x => x * Math.PI / 180;
+            const dLat = rad(b[0] - a[0]);
+            const dLng = rad(b[1] - a[1]);
+            const h = Math.sin(dLat/2)**2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng/2)**2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+        }
         async function animate_movement(data) {
             let path = data[0];
             let current_path = [];
             let step = 10;
             let length = 0;
             safe = true;
+            let prev = 0;
             for (let i = 0; i < path.length; i += step) {
                 if (safe == true) {
                     current_path = path.slice(0,i+1);
                     globe.pathsData([current_path]);
                     saved_pos = path[i];
-                    length += 3700*15;
+                    length += haversine(path[prev], path[i]);
+                    prev = i;
 
                     await new Promise(r => setTimeout(r,80));
                 }
                 else {
                     break;
                 }
+            }
+ 
+            if (safe == true && prev < path.length - 1) {
+                globe.pathsData([path]);
+                new_pos = path[path.length - 1]
+                length += haversine(path[prev],new_pos)
             }
              let text = `The estimated path's length: ${length / 1000} km`;
              const text1 = document.getElementById('text');
