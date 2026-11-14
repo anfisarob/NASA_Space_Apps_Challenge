@@ -31,8 +31,12 @@ mars_r = 3396000
 l = 2*math.pi*mars_r
 s = (l / 360) * 0.0625
 
+lat_rows = 90 - 0.0625 * (np.arange(coords.shape[0]) + 0.5)
+cos_lat = np.maximum(np.cos(np.radians(lat_rows)), 0.01).reshape(-1, 1)
+
 dz = np.sqrt(dx**2 + dy**2)
-weights = np.where(np.degrees(np.arctan(dz/s)) < 20, 1 + dz, infinity)
+slope = np.degrees(np.arctan(np.hypot(dx / (s * cos_lat), dy / s)))
+weights = np.where(slope < 30, 1 + dz, infinity)
 
 thermal_k = 0.1
 weights = np.array(weights,dtype=np.float32) + np.array(thermal_k*thermal_inertia,dtype=np.float32)
