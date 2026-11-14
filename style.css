@@ -1,0 +1,54 @@
+#scene {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+#globe {
+    width: 100%;
+    height: 100%;
+}
+.button1 {
+    color: #0e69b9;
+    background: #ebb9ff;
+    position:absolute;
+    width: 100px;
+    height: 35px;
+    border-radius: 20px;
+    z-index: 10;
+    left: 20px;
+    top: 720px;
+    border: none;
+}
+
+.button2 {
+    color: #ebb9ff;
+    background: #0e69b9;
+    position:absolute;
+    z-index: 10;
+    width: 100px;
+    height: 35px;
+    left: 150px;
+    top: 720px;
+    border-radius: 20px;
+    border: none;
+}
+.button3 {
+    color: white;
+    background: red;
+    position:absolute;
+    z-index: 10;
+    width: 100px;
+    height: 35px;
+    top: 20px;
+    right: 30px;
+    border-radius: 20px;
+    border: none;
+}
+
+#text {
+    position: absolute;
+    color: white;
+    top: 20px;
+    left: 30px;
+    z-index: 10;
+}
