@@ -1,0 +1,96 @@
+<head>
+    <link rel = "stylesheet" href = "style.css">
+    <script src="//cdn.jsdelivr.net/npm/globe.gl"></script>
+</head>
+<body>
+    <div id = "csene">
+        <div id = "globe"></div>
+        <button type = "button" class = "button1" onclick = "func1()">Topography</button>
+        <button type = "button" class = "button2" onclick = "func3()">Thermal inertia</button>
+        <button type = "button" class = "button3" onclick = "func2()">Alert!</button>
+        <p id = "text"></p>
+    </div>
+    <script>
+        let safe = true;
+        let saved_pos = null;
+        const objects = [{lat: -4.5895, lng: 137.4417, text: 'Curiosity', category: 'object'},
+                        {lat: 18.447, lng: 77.402, text: 'Perseverance', category: 'object'},
+                        {lat: 18.65, lng: -133.8, text: 'Olympus', category: 'object'},
+                        {lat: -5.4, lng: 137.8, text: 'Gale Crater', category: 'object'},
+                        {lat: 49.02, lng: -177.85, text: 'Arcadia', category: 'safe'},
+                        {lat: -42.4, lng: 70.5, text: 'Ellada', category: 'safe'}
+        ];
+      const globe = new Globe(document.getElementById('globe'))
+        .globeImageUrl("./src/mars.webp")
+        .labelsData(objects)
+        .labelSize(1)
+        .labelColor(d => d.category === 'object'? 'white': 'blue' )
+        .labelDotRadius(0.5)
+        .pathStroke(5)
+        .pathPointAlt(pnt => 0.005)
+        .pathResolution(5)
+        .pathColor(() => "#00ffcc")
+        .pathTransitionDuration(0)
+        .onGlobeClick(({lat, lng}) => {
+            //globe.ringsData([{lat, lng}])
+        fetch('/api/build_path', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify({lat, lng})
+        })
+        .then(res => res.json())
+        .then(data => animate_movement(data));
+        });
+        safe = true;
+        async function animate_movement(data) {
+            let path = data[0];
+            let current_path = [];
+            let step = 10;
+            let length = 0;
+            safe = true;
+            for (let i = 0; i < path.length; i += step) {
+                if (safe == true) {
+                    current_path = path.slice(0,i+1);
+                    globe.pathsData([current_path]);
+                    saved_pos = path[i];
+                    length += 3700*15;
+
+                    await new Promise(r => setTimeout(r,80));
+                }
+                else {
+                    break;
+                }
+            }
+             let text = `The estimated path's length: ${length / 1000} km`;
+             const text1 = document.getElementById('text');
+             text1.textContent = text;
+        }
+
+        function func1() {
+            globe.globeImageUrl("./src/mars.png").bumpImageUrl("./src/mars.png")
+        }
+        function func3() {
+            globe.globeImageUrl("./src/thermal_inertia.png").bumpImageUrl("./src/mars.png")
+        }
+        function func2() {
+            safe = false;
+            let curr_lat = saved_pos[0];
+            let curr_lng = saved_pos[1];
+            fetch('/api/build_path_emergency', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: curr_lat,
+                    lng: curr_lng
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                globe.pathColor(() => 'blue')
+                animate_movement(data);
+            });
+        }
+        const globeMaterial = globe.globeMaterial();
+        globeMaterial.bumpScale = 50;
+    </script>
+</body>
