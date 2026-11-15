@@ -18,10 +18,14 @@ saturation = new_arr[:,:,1]
 
 mn = 25
 mx = 600
+mx_arr = value_arr.max()
+mn_arr = value_arr.min()
 
-value_arr = np.where((intensity < 15) | (saturation < 15), np.average(value_arr), value_arr)
-thermal_inertia = mn + (mx - mn)*((value_arr - value_arr.min()) / (value_arr.max() - value_arr.min()))
+value_arr = np.where((intensity < 15) | (saturation < 15), np.inf, value_arr)
+thermal_inertia = mn + (mx - mn)*((value_arr - mn_arr) / (mx_arr - mn_arr))
 
+thermal_inertia = np.roll(thermal_inertia, thermal_inertia.shape[1] // 2, axis = 1)
+thermal_inertia = np.where((thermal_inertia > 500) & (thermal_inertia < 590), np.inf, thermal_inertia)
 
 topography = pdr.read("megt90n000eb.lbl")
 coords = np.array(topography['IMAGE'])
@@ -38,7 +42,7 @@ dz = np.sqrt(dx**2 + dy**2)
 slope = np.degrees(np.arctan(np.hypot(dx / (s * cos_lat), dy / s)))
 weights = np.where(slope < 30, 1 + dz, infinity)
 
-thermal_k = 0.08
+thermal_k = 0.2
 weights = np.array(weights,dtype=np.float32) + np.array(thermal_k*thermal_inertia,dtype=np.float32)
 safety_zones = [[49.02, -171.85],[-42.4,70.5]]
 
@@ -78,6 +82,8 @@ def build_path():
     goal_y = 137.4417
 
     path = pyastar2d.astar_path(weights, (start_x, start_y), transform_from_latlng(goal_x,goal_y), allow_diagonal=True)
+    if path is None:
+        return jsonify({"error": "no safe path"}), 404
     final = transform_from_yx(path)
 
     with open("heights.json", "w") as f:
@@ -94,14 +100,16 @@ def build_path_emergency():
     lng = data_e['lng']
 
     for zone in safety_zones:
-        path = pyastar2d.astar_path(weights,transform_from_latlng(lat,lng),transform_from_latlng(zone[0],zone[1]))
-
+        path = pyastar2d.astar_path(weights,transform_from_latlng(lat,lng),transform_from_latlng(zone[0],zone[1]),allow_diagonal=True)
+        if path is None:
+            continue
         cost = weights[path[:,0],path[:,1]].sum()
 
         if (cost < best_cost):
             best_cost = cost
             best_path = path
-
+    if best_path is None:
+        return jsonify({"error": "no safe path to any station"}),404
     final = transform_from_yx(best_path)
 
     with open("heights.json","w") as f:
