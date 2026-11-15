@@ -1,4 +1,4 @@
-#NASA Space Apps Challenge – Safe Path Planner on Mars
+##NASA Space Apps Challenge – Safe Path Planner on Mars
 
 An astronaut picks a position on a Mars globe; the app draws a safe route to
 Curiosity (default, white dot) using A* over MOLA topography, avoiding steep slopes.
