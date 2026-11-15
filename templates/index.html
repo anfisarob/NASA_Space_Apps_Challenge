@@ -9,7 +9,26 @@
         <button type = "button" class = "button2" onclick = "func3()">Thermal inertia</button>
         <button type = "button" class = "button3" onclick = "func2()">Alert!</button>
         <button type = "button" class = "button4" onclick = "func4()">Back</button>
+        <button type = "button" class = "button5" onclick = "func5()">Roughness</button>  <!-- NEW -->
+        <button type = "button" class = "button6" onclick = "func6()">Weather</button>  <!-- NEW -->
         <p id = "text"></p>
+        <!-- NEW: static snapshot of REMS weather data (not live) -->
+        <div id = "weather" style = "display:none">
+            <b>Weather at Gale Crater (Curiosity, REMS)</b>
+            <table>
+                <tr><th>Sol</th><th>Date</th><th>High</th><th>Low</th></tr>
+                <tr><td>4989</td><td>Aug 19</td><td>-6 °C</td><td>-72 °C</td></tr>
+                <tr><td>4990</td><td>Aug 20</td><td>-8 °C</td><td>-72 °C</td></tr>
+                <tr><td>4991</td><td>Aug 21</td><td>-11 °C</td><td>-69 °C</td></tr>
+                <tr><td>4992</td><td>Aug 22</td><td>-6 °C</td><td>-69 °C</td></tr>
+                <tr><td>4993</td><td>Aug 23</td><td>-6 °C</td><td>-70 °C</td></tr>
+                <tr><td>4994</td><td>Aug 24</td><td>-7 °C</td><td>-70 °C</td></tr>
+                <tr><td>4995</td><td>Aug 25</td><td>-5 °C</td><td>-71 °C</td></tr>
+            </table>
+            <small>Snapshot of Sols 4989–4995 (2026), not live data.<br>
+            Credit: NASA/JPL-Caltech/CAB (CSIC-INTA)<br>
+            mars.nasa.gov/layout/embed/image/mslweather/</small>
+        </div>
     </div>
     <script>
         let safe = true;
@@ -54,6 +73,7 @@
             return 2 * R * Math.asin(Math.sqrt(h));
         }
         async function animate_movement(data) {
+            if (!Array.isArray(data)) { alert('No safe path found'); return; }  // FIX: server sent an error
             let path = data[0];
             let current_path = [];
             let step = 10;
@@ -80,7 +100,7 @@
                 new_pos = path[path.length - 1]
                 length += haversine(path[prev],new_pos)
             }
-             let text = `The estimated path's length: ${length / 1000} km`;
+             let text = `The estimated path's length: ${(length / 1000).toFixed(1)} km`;
              const text1 = document.getElementById('text');
              text1.textContent = text;
         }
@@ -93,6 +113,15 @@
         }
         function func4() {
              globe.globeImageUrl("./src/mars.webp").bumpImageUrl("./src/mars.png")
+        }
+        // NEW: MOLA vertical roughness layer (Kreslavsky & Head), display only
+        function func5() {
+            globe.globeImageUrl("./src/mola_roughness.webp").bumpImageUrl("./src/mars.png")
+        }
+        // NEW: show / hide the weather card
+        function func6() {
+            const w = document.getElementById('weather');
+            w.style.display = (w.style.display === 'none') ? 'block' : 'none';
         }
         function func2() {
             safe = false;
