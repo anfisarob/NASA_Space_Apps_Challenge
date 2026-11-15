@@ -22,6 +22,11 @@ mx = 600
 value_arr = np.where((intensity < 15) | (saturation < 15), np.average(value_arr), value_arr)
 thermal_inertia = mn + (mx - mn)*((value_arr - value_arr.min()) / (value_arr.max() - value_arr.min()))
 
+# FIX: the PNG goes from -180 to 180 longitude, but the MOLA array (coords) goes from 0 to 360
+# (WESTERNMOST_LONGITUDE = 0 in the .lbl). Shift it by half the width, like in topography_generation.py.
+thermal_inertia = np.roll(thermal_inertia, thermal_inertia.shape[1] // 2, axis = 1)
+# NOTE: this is the hue of the color: purple (LOW inertia, fine dust) gets the HIGH value, so dust costs more.
+
 
 topography = pdr.read("megt90n000eb.lbl")
 coords = np.array(topography['IMAGE'])
@@ -78,6 +83,8 @@ def build_path():
     goal_y = 137.4417
 
     path = pyastar2d.astar_path(weights, (start_x, start_y), transform_from_latlng(goal_x,goal_y), allow_diagonal=True)
+    if path is None:  # FIX: no safe path -> return an error instead of crashing
+        return jsonify({"error": "no safe path"}), 404
     final = transform_from_yx(path)
 
     with open("heights.json", "w") as f:
@@ -94,7 +101,9 @@ def build_path_emergency():
     lng = data_e['lng']
 
     for zone in safety_zones:
-        path = pyastar2d.astar_path(weights,transform_from_latlng(lat,lng),transform_from_latlng(zone[0],zone[1]))
+        path = pyastar2d.astar_path(weights,transform_from_latlng(lat,lng),transform_from_latlng(zone[0],zone[1]), allow_diagonal=True)  # FIX: same movement rules as build_path
+        if path is None:  # FIX: this station is not reachable, try the next one
+            continue
 
         cost = weights[path[:,0],path[:,1]].sum()
 
@@ -102,6 +111,8 @@ def build_path_emergency():
             best_cost = cost
             best_path = path
 
+    if best_path is None:  # FIX: no station reachable
+        return jsonify({"error": "no safe path to any station"}), 404
     final = transform_from_yx(best_path)
 
     with open("heights.json","w") as f:
